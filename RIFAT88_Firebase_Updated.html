@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<title>RIFAT88 Sports</title>
+<style>
+:root{--bg:#0b1220;--panel:#172235;--panel2:#101a2b;--line:#2c3b52;--gold:#f5b942;--blue:#2563eb;--green:#10b981;--red:#ef4444;--muted:#a9b7ca}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font-family:Arial,"Noto Sans Bengali",sans-serif}
+header{position:sticky;top:0;z-index:10;background:#111d30;border-bottom:1px solid var(--line);padding:12px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.logo{background:#fff;border-radius:7px;padding:5px 10px;font-size:25px;font-weight:900;font-style:italic;letter-spacing:1px}.logo b{color:#111}.logo strong{color:#eab308}
+.header-right{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.balance{background:#064e3b;color:#6ee7b7;padding:9px 12px;border-radius:20px;font-weight:bold}
+button,.btn{border:0;border-radius:7px;padding:9px 12px;font-weight:bold;cursor:pointer;color:#fff;background:#334155}
+button:disabled{opacity:.45;cursor:not-allowed}button:active{transform:scale(.98)}.primary{background:var(--blue)}.gold{background:var(--gold);color:#111}.green{background:var(--green)}.red{background:var(--red)}
+.container{max-width:1050px;margin:18px auto;padding:0 12px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:15px}
+h2,h3{margin:0 0 12px;color:var(--gold)}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.games{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tile{min-height:82px;background:#0c1728;border:1px solid var(--line);border-radius:10px;padding:10px 5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.tile .ico{font-size:25px}.tile small{color:#b8c6d8;font-size:11px}.tile.active{border-color:var(--gold);background:#253149}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.match{background:#0d192a;border:1px solid var(--line);border-radius:9px;padding:12px;margin:9px 0}
+.match-head{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:12px;margin-bottom:8px}
+.teams{font-size:16px;font-weight:bold;margin-bottom:10px}.score{color:#6ee7b7;margin:6px 0}
+.odds{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.odd{background:#29374c;border:1px solid #d99d28;color:#fff;padding:9px 4px;font-size:12px}
+.empty{color:var(--muted);font-size:13px;padding:12px;text-align:center;border:1px dashed var(--line);border-radius:8px}
+.modal{display:none;position:fixed;inset:0;background:#000b;z-index:30;align-items:center;justify-content:center;padding:15px}.modal.show{display:flex}
+.modal-box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;width:100%;max-width:420px;max-height:90vh;overflow:auto}
+label{display:block;font-size:13px;margin:10px 0 5px;color:#dbeafe}input,select{width:100%;padding:11px;border-radius:7px;border:1px solid #52627a;background:#0c1728;color:#fff}
+.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.hint{font-size:12px;color:var(--muted);line-height:1.5}
+.status{font-size:12px;color:#86efac;margin-top:8px}.warn{color:#fca5a5}.admin-only{display:none}
+footer{text-align:center;color:var(--muted);padding:20px;font-size:12px}
+@media(min-width:700px){.grid{grid-template-columns:repeat(6,minmax(0,1fr))}.games{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><b>RIFAT</b><strong>88</strong></div>
+  <div class="header-right">
+    <div id="authArea">
+      <button class="gold" onclick="openAuth('signup')">অ্যাকাউন্ট খুলুন</button>
+      <button class="primary" onclick="openAuth('login')">লগ ইন</button>
+      <button onclick="openAuth('admin')">অ্যাডমিন OTP</button>
+    </div>
+    <div id="memberArea" style="display:none">
+      <span id="memberPhone"></span>
+      <span id="adminBadge" style="display:none;color:#f5b942">অ্যাডমিন</span>
+      <button onclick="logout()">লগ আউট</button>
+    </div>
+    <div class="balance">ডেমো ব্যালেন্স: ৳<span id="balance">500.00</span></div>
+  </div>
+</header>
+
+<main class="container">
+  <section class="panel">
+    <div class="section-head"><h2>খেলার বিভাগ</h2><button id="allUploadBtn" class="gold admin-only" onclick="document.getElementById('allFiles').click()">সব খেলার JSON ফাইল লোড</button></div>
+    <input id="allFiles" type="file" accept=".json,application/json" multiple hidden onchange="loadMultipleFiles(this.files)">
+    <p class="hint">অ্যাডমিন লগইন করে প্রতিটি খেলার বাটনে চাপ দিয়ে ফোনের মেমোরি থেকে JSON ফাইল নির্বাচন করতে পারবেন। আপলোড করা ম্যাচ Firestore-এ সংরক্ষিত হবে, তাই অন্য ইউজাররাও দেখতে পারবেন।</p>
+    <div class="grid" id="sportsGrid"></div>
+  </section>
+
+  <section class="panel">
+    <div class="section-head"><h2>গেম বিভাগ</h2><span class="hint">JSON ডেটা অ্যাডমিন লোড করবেন</span></div>
+    <div class="grid games" id="gamesGrid"></div>
+  </section>
+
+  <section class="panel">
+    <div class="section-head"><h2 id="listTitle">লাইভ ম্যাচ ও আপলোড করা ডেটা</h2><button id="clearBtn" onclick="clearCurrent()" class="red admin-only">এই বিভাগের ডেটা মুছুন</button></div>
+    <div id="matchList"><div class="empty">Firebase থেকে ম্যাচ লোড হচ্ছে…</div></div>
+    <p id="loadStatus" class="status"></p>
+  </section>
+
+  <section class="panel">
+    <h3>ফাইল ব্যবহারের নিয়ম</h3>
+    <p class="hint">অ্যাডমিন লগইন করে JSON ফাইল আপলোড করবেন। ফাইলের তথ্য Firestore-এ সংরক্ষিত হবে। অন্য ইউজাররা অ্যাপ খুললে একই ডেটা দেখতে পারবেন। এই অ্যাপ ডেমো তথ্য প্রদর্শন করে; নিজে থেকে ইন্টারনেটের লাইভ স্কোর তৈরি করে না এবং কোনো বাস্তব অর্থের বেট/লেনদেন চালায় না।</p>
+  </section>
+</main>
+<footer>© 2026 RIFAT88 Sports — Demo interface. Real-money deposit, withdrawal or betting is not enabled.</footer>
+
+<div class="modal" id="authModal">
+ <div class="modal-box">
+  <h2 id="authTitle">নতুন অ্যাকাউন্ট</h2>
+  <form id="authForm">
+   <label>মোবাইল নম্বর</label><input id="phone" type="tel" placeholder="01XXXXXXXXX" autocomplete="tel" required>
+   <label>পাসওয়ার্ড</label><input id="pass1" type="password" minlength="6" placeholder="কমপক্ষে ৬ অক্ষর" autocomplete="current-password" required>
+   <div id="confirmWrap"><label>পাসওয়ার্ড আবার লিখুন</label><input id="pass2" type="password" minlength="6" placeholder="একই পাসওয়ার্ড আবার লিখুন" autocomplete="new-password"></div>
+   <p id="authMessage" class="hint"></p>
+   <div class="actions"><button type="button" onclick="closeAuth()">বাতিল</button><button class="green" type="submit">সাবমিট</button></div>
+  </form>
+  <p id="switchText" class="hint">লগইন ও সাইনআপ বদলাতে <a href="#" onclick="switchMode();return false" style="color:#f5b942">এখানে চাপ দিন</a>।</p>
+ </div>
+</div>
+
+<div class="modal" id="otpModal">
+ <div class="modal-box">
+  <h2>অ্যাডমিন SMS OTP</h2>
+  <p class="hint">শুধু নির্ধারিত অ্যাডমিন নম্বরেই OTP পাঠানো হবে।</p>
+  <label>অ্যাডমিন ফোন নম্বর</label>
+  <input id="adminPhone" type="tel" value="+8801791424381" readonly>
+  <div id="recaptcha-container"></div>
+  <button id="sendOtpBtn" class="primary" style="width:100%;margin-top:12px" onclick="sendAdminOtp()">SMS OTP পাঠান</button>
+  <div id="otpEntry" style="display:none">
+   <label>SMS-এ পাওয়া OTP</label><input id="otpCode" inputmode="numeric" autocomplete="one-time-code" placeholder="৬ সংখ্যার OTP">
+   <button class="green" style="width:100%;margin-top:10px" onclick="verifyAdminOtp()">OTP যাচাই করে লগইন</button>
+  </div>
+  <p id="otpMessage" class="hint"></p>
+  <div class="actions"><button type="button" onclick="closeOtp()">বন্ধ করুন</button></div>
+ </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script>
+/* Firebase web configuration supplied for the RIFAT88 project. */
+const firebaseConfig = {
+  apiKey: "AIzaSyAPWyl90epXANTtUBqW2zAF0WXn9eqjhg",
+  authDomain: "rifat88-8fd06.firebaseapp.com",
+  projectId: "rifat88-8fd06",
+  storageBucket: "rifat88-8fd06.firebasestorage.app",
+  messagingSenderId: "626879639215",
+  appId: "1:626879639215:web:3959726a4f201392d06e5a"
+};
+const ADMIN_PHONE = "+8801791424381";
+const ADMIN_UID_EMAIL_ACCOUNT = "2IBivyAUUIdQ763GrK6NWdMESNF3";
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const sports=[
+ ['all','📋','সবগুলো'],['football','⚽','ফুটবল'],['cricket','🏏','ক্রিকেট'],
+ ['tennis','🎾','টেনিস'],['basketball','🏀','বাস্কেটবল'],['hockey','🏒','আইস হকি'],
+ ['volleyball','🏐','ভলিবল'],['badminton','🏸','ব্যাডমিন্টন'],['kabaddi','🤼','কাবাডি']
+];
+const games=[['all-games','🎲','সকল গেম'],['crash','✈️','Crash'],['crystal','💎','Crystal'],['burning-hot','🔥','Burning Hot'],['casino','🃏','ক্যাসিনো']];
+let dataByCategory={},activeCategory='all',balance=500,authMode='signup',currentUser=null,confirmationResult=null,recaptchaVerifier=null;
+const $=id=>document.getElementById(id);
+function normalizePhone(value){
+ let p=String(value||'').trim().replace(/[\s()-]/g,'');
+ if(/^01[3-9]\d{8}$/.test(p)) return '+88'+p;
+ if(/^8801[3-9]\d{8}$/.test(p)) return '+'+p;
+ if(/^\+8801[3-9]\d{8}$/.test(p)) return p;
+ throw new Error('সঠিক বাংলাদেশি মোবাইল নম্বর দিন (01XXXXXXXXX)।');
+}
+function phoneLoginEmail(phone){return phone.replace('+','').replace(/\D/g,'')+'@rifat88-login.com';}
+function isAdminUser(user){
+ return !!user && (user.uid===ADMIN_UID_EMAIL_ACCOUNT || user.phoneNumber===ADMIN_PHONE);
+}
+function setStatus(message,isError=false){
+ $('loadStatus').textContent=message;
+ $('loadStatus').className=isError?'status warn':'status';
+}
+function makeTile(item){
+ const [id,ico,name]=item;
+ const b=document.createElement('button');b.className='tile';b.innerHTML=`<span class="ico">${ico}</span><b>${name}</b><small>${id==='all'||id==='all-games'?'সব ডেটা দেখুন':'ম্যাচ দেখুন'}</small>`;
+ b.onclick=()=>{if(id==='all'||id==='all-games'){if(isAdminUser(currentUser)){$('allFiles').click();}else{loadAllCategories();}return;}activeCategory=id;if(isAdminUser(currentUser)){chooseFile(id,name);}else{renderCategory(id);}};
+ return b;
+}
+sports.forEach(x=>$('sportsGrid').appendChild(makeTile(x)));
+games.forEach(x=>$('gamesGrid').appendChild(makeTile(x,true)));
+function findMatches(root){
+ if(Array.isArray(root))return root;
+ if(!root||typeof root!=='object')return [];
+ for(const k of ['matches','match','events','data','fixtures','খেলা','ম্যাচ'])if(Array.isArray(root[k]))return root[k];
+ if(root.data&&typeof root.data==='object')return findMatches(root.data);
+ return [root];
+}
+function first(obj,keys){for(const k of keys){if(obj&&obj[k]!==undefined&&obj[k]!==null&&obj[k]!=='')return obj[k];}return '';}
+function renderData(item,id){
+ $('listTitle').textContent=(item?.name||id)+' — ম্যাচ ও ডেটা';
+ const matches=findMatches(item.data);const box=$('matchList');box.innerHTML='';
+ if(!matches.length){box.innerHTML='<div class="empty">এই ফাইলে ম্যাচের তালিকা পাওয়া যায়নি।</div>';return;}
+ matches.forEach((m,i)=>{
+  if(!m||typeof m!=='object')return;
+  const league=first(m,['league','competition','tournament','লিগ']);
+  const home=first(m,['home','homeTeam','team1','home_team','হোম','participant1'])||'হোম দল';
+  const away=first(m,['away','awayTeam','team2','away_team','অ্যাওয়ে','অ্যাওয়ে','participant2'])||'অ্যাওয়ে দল';
+  const score=first(m,['score','result','scores','স্কোর']);
+  const status=first(m,['status','state','সময়','time']);
+  const odds=m.odds||m.সম্ভাবনা||m.markets||{};
+  const homeOdd=first(odds,['home','1','বাড়ি','বাড়ি']);
+  const drawOdd=first(odds,['draw','x','ড্র']);
+  const awayOdd=first(odds,['away','2','অ্যাওয়ে','অ্যাওয়ে']);
+  const card=document.createElement('div');card.className='match';
+  const head=document.createElement('div');head.className='match-head';
+  head.textContent=[typeof league==='object'?first(league,['name']):league,status].filter(Boolean).join(' • ')||`ম্যাচ ${i+1}`;
+  const teams=document.createElement('div');teams.className='teams';teams.textContent=`${home} VS ${away}`;
+  card.append(head,teams);
+  if(score){const s=document.createElement('div');s.className='score';s.textContent='স্কোর: '+(typeof score==='object'?JSON.stringify(score):score);card.append(s);}
+  const oddVals=[['হোম',homeOdd],['ড্র',drawOdd],['অ্যাওয়ে',awayOdd]].filter(x=>x[1]!=='');
+  if(oddVals.length){const oddsBox=document.createElement('div');oddsBox.className='odds';oddVals.forEach(([label,val])=>{const b=document.createElement('button');b.className='odd';b.textContent=`${label}: ${val}`;b.onclick=()=>alert('এটি শুধু প্রদর্শনের ডেমো অডস; কোনো বেট গ্রহণ করা হয় না।');oddsBox.appendChild(b);});card.append(oddsBox);}
+  box.appendChild(card);
+ });
+ if(!box.children.length)box.innerHTML='<div class="empty">দেখানোর মতো ম্যাচ পাওয়া যায়নি।</div>';
+}
+async function renderCategory(id){
+ $('matchList').innerHTML='<div class="empty">ডেটা লোড হচ্ছে…</div>';
+ try{
+  const snap=await db.collection('matches').doc(id).get();
+  if(!snap.exists){dataByCategory[id]=null;$('listTitle').textContent=id+' — ম্যাচ ও ডেটা';$('matchList').innerHTML='<div class="empty">এই বিভাগের কোনো ম্যাচ আপলোড করা হয়নি।</div>';return;}
+  const d=snap.data();dataByCategory[id]={name:d.name||id,file:d.fileName||'',data:d.data};
+  renderData(dataByCategory[id],id);
+ }catch(e){$('matchList').innerHTML='<div class="empty">ডেটা লোড করা যায়নি। ইন্টারনেট ও Firestore Rules পরীক্ষা করুন।</div>';setStatus(e.message,true);}
+}
+async function loadAllCategories(){
+ $('listTitle').textContent='সব খেলার ম্যাচ ও ডেটা';$('matchList').innerHTML='';
+ try{
+  const snap=await db.collection('matches').get();
+  if(snap.empty){$('matchList').innerHTML='<div class="empty">এখনো কোনো ম্যাচ আপলোড করা হয়নি।</div>';return;}
+  snap.forEach(doc=>{
+   const d=doc.data();dataByCategory[doc.id]={name:d.name||doc.id,file:d.fileName||'',data:d.data};
+   const section=document.createElement('div');section.className='match';
+   const title=document.createElement('h3');title.textContent=d.name||doc.id;section.appendChild(title);
+   const summary=document.createElement('p');summary.className='hint';summary.textContent='ফাইল: '+(d.fileName||'JSON');section.appendChild(summary);
+   const view=document.createElement('button');view.className='primary';view.textContent='ম্যাচ দেখুন';view.onclick=()=>{activeCategory=doc.id;renderData(dataByCategory[doc.id],doc.id);};section.appendChild(view);
+   $('matchList').appendChild(section);
+  });
+ }catch(e){$('matchList').innerHTML='<div class="empty">সব ডেটা লোড করা যায়নি।</div>';setStatus(e.message,true);}
+}
+async function chooseFile(id,name){
+ if(!isAdminUser(currentUser)){alert('JSON ফাইল আপলোড করার অনুমতি শুধু অ্যাডমিনের আছে।');return;}
+ const input=document.createElement('input');input.type='file';input.accept='.json,application/json';
+ input.onchange=()=>{if(input.files[0])readJsonFile(input.files[0],id,name);};input.click();
+}
+async function loadMultipleFiles(files){
+ if(!isAdminUser(currentUser)){alert('শুধু অ্যাডমিন JSON আপলোড করতে পারবেন।');$('allFiles').value='';return;}
+ for(const file of Array.from(files)){
+  const key=file.name.replace(/\.json$/i,'').toLowerCase().replace(/[^a-z0-9_-]/g,'-').slice(0,60)||'other';
+  await readJsonFile(file,key,file.name);
+ }
+ $('allFiles').value='';
+}
+async function readJsonFile(file,id,name){
+ if(!isAdminUser(currentUser)){setStatus('শুধু অ্যাডমিন JSON আপলোড করতে পারবেন।',true);return;}
+ try{
+  const json=JSON.parse(await file.text());
+  const payload={name:name||id,fileName:file.name,data:json,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.uid};
+  await db.collection('matches').doc(id).set(payload);
+  dataByCategory[id]={name:name||id,file:file.name,data:json};activeCategory=id;renderData(dataByCategory[id],id);
+  setStatus(`সফল: ${file.name} Firestore-এ সংরক্ষিত হয়েছে। অন্য ইউজাররাও দেখতে পারবেন।`);
+ }catch(err){setStatus('JSON আপলোড হয়নি: '+(err.message||'ফাইল বা Firestore পরীক্ষা করুন।'),true);}
+}
+async function clearCurrent(){
+ if(!isAdminUser(currentUser)){alert('শুধু অ্যাডমিন ডেটা মুছতে পারবেন।');return;}
+ if(!confirm('এই বিভাগের Firestore ডেটা মুছে ফেলবেন?'))return;
+ try{await db.collection('matches').doc(activeCategory).delete();delete dataByCategory[activeCategory];$('matchList').innerHTML='<div class="empty">এই বিভাগের ডেটা মুছে ফেলা হয়েছে।</div>';setStatus('ডেটা মুছে ফেলা হয়েছে।');}
+ catch(e){setStatus('ডেটা মোছা যায়নি: '+e.message,true);}
+}
+function openAuth(mode){authMode=mode;updateAuthForm();$('authMessage').textContent='';$('authModal').classList.add('show');}
+function closeAuth(){$('authModal').classList.remove('show');}
+function switchMode(){authMode=authMode==='signup'?'login':'signup';updateAuthForm();}
+function updateAuthForm(){
+ $('authTitle').textContent=authMode==='signup'?'নতুন ইউজার অ্যাকাউন্ট':'ইউজার লগ ইন';
+ $('confirmWrap').style.display=authMode==='signup'?'block':'none';
+ $('pass2').required=authMode==='signup';
+ $('switchText').style.display='block';
+}
+$('authForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const msg=$('authMessage');msg.textContent='অপেক্ষা করুন…';
+ let phone,email,p1=$('pass1').value,p2=$('pass2').value;
+ try{phone=normalizePhone($('phone').value);email=phoneLoginEmail(phone);}catch(err){msg.textContent=err.message;return;}
+ if(p1.length<6){msg.textContent='পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।';return;}
+ if(authMode==='signup'&&p1!==p2){msg.textContent='দুটি পাসওয়ার্ড মেলেনি। আবার একই পাসওয়ার্ড লিখুন।';return;}
+ try{
+  let cred;
+  if(authMode==='signup'){
+   cred=await auth.createUserWithEmailAndPassword(email,p1);
+   await db.collection('users').doc(cred.user.uid).set({phone,createdAt:firebase.firestore.FieldValue.serverTimestamp(),demoBalance:500});
+  }else{
+   cred=await auth.signInWithEmailAndPassword(email,p1);
+  }
+  closeAuth();msg.textContent='';
+ }catch(err){
+  const codes={
+   'auth/email-already-in-use':'এই নম্বরে ইতিমধ্যে অ্যাকাউন্ট আছে। লগইন করুন।',
+   'auth/user-not-found':'এই নম্বরে অ্যাকাউন্ট নেই। আগে অ্যাকাউন্ট খুলুন।',
+   'auth/wrong-password':'পাসওয়ার্ড সঠিক নয়।',
+   'auth/invalid-credential':'ফোন নম্বর বা পাসওয়ার্ড সঠিক নয়।',
+   'auth/weak-password':'আরও শক্তিশালী পাসওয়ার্ড দিন।'
+  };
+  msg.textContent=codes[err.code]||('অ্যাকাউন্ট করা যায়নি: '+err.message);
+ }
+});
+function closeOtp(){$('otpModal').classList.remove('show');}
+function openAdminOtp(){
+ $('otpMessage').textContent='';$('otpEntry').style.display='none';$('otpCode').value='';$('otpModal').classList.add('show');
+ if(recaptchaVerifier){try{recaptchaVerifier.clear();}catch(e){}recaptchaVerifier=null;}
+ recaptchaVerifier=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'normal'});
+ recaptchaVerifier.render().catch(e=>$('otpMessage').textContent='reCAPTCHA লোড হয়নি: '+e.message);
+}
+async function sendAdminOtp(){
+ $('otpMessage').textContent='OTP পাঠানো হচ্ছে…';
+ try{
+  confirmationResult=await auth.signInWithPhoneNumber(ADMIN_PHONE,recaptchaVerifier);
+  $('otpEntry').style.display='block';$('otpMessage').textContent='SMS পাঠানো হয়েছে। OTP লিখুন।';
+ }catch(e){$('otpMessage').textContent='OTP পাঠানো যায়নি: '+e.message;try{recaptchaVerifier.clear();}catch(x){}recaptchaVerifier=null;}
+}
+async function verifyAdminOtp(){
+ const code=$('otpCode').value.trim();if(!/^\d{6}$/.test(code)){$('otpMessage').textContent='৬ সংখ্যার OTP লিখুন।';return;}
+ try{
+  const result=await confirmationResult.confirm(code);
+  if(result.user.phoneNumber!==ADMIN_PHONE){await auth.signOut();throw new Error('এই নম্বরটি অ্যাডমিন নম্বর নয়।');}
+  closeOtp();setStatus('অ্যাডমিন SMS OTP দিয়ে লগইন করেছেন।');
+ }catch(e){$('otpMessage').textContent='OTP যাচাই হয়নি: '+e.message;}
+}
+function logout(){auth.signOut();}
+function showMember(user){
+ currentUser=user;
+ const admin=isAdminUser(user);
+ $('authArea').style.display='none';$('memberArea').style.display='flex';
+ $('memberPhone').textContent=user.phoneNumber||user.email||'ইউজার';
+ $('adminBadge').style.display=admin?'inline':'none';
+ document.querySelectorAll('.admin-only').forEach(el=>el.style.display=admin?'inline-block':'none');
+ $('balance').textContent=balance.toFixed(2);
+}
+auth.onAuthStateChanged(async user=>{
+ currentUser=user;
+ if(user){
+  try{
+   const doc=await db.collection('users').doc(user.uid).get();
+   if(doc.exists&&doc.data().demoBalance!==undefined)balance=Number(doc.data().demoBalance)||500;
+  }catch(e){/* user profile is optional for phone-auth admin */}
+  showMember(user);
+ }else{
+  $('authArea').style.display='flex';$('memberArea').style.display='none';$('adminBadge').style.display='none';
+  document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
+ }
+});
+$('authArea').querySelector('button:nth-child(3)').onclick=openAdminOtp;
+db.collection('appConfig').doc('main').get().then(s=>{if(s.exists&&s.data().appName)document.title=s.data().appName+' Sports';}).catch(()=>{});
+loadAllCategories();
+</script>
+</body>
+</html>
